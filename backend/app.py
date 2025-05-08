@@ -1,16 +1,17 @@
 import os
+import json
 import logging
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 from dotenv import load_dotenv
 import requests
 
-load_dotenv()  # Load environment variables from .env
+load_dotenv()
 
 OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
 OPENROUTER_API_URL = os.getenv("OPENROUTER_API_URL")
 
-# Setup logging
+# Logging setup
 logging.basicConfig(
     filename="openrouter.log",
     level=logging.INFO,
@@ -20,30 +21,19 @@ logging.basicConfig(
 app = Flask(__name__)
 CORS(app)
 
-# Example programming courses (in-memory)
-courses = [
-    {
-        "id": 1,
-        "name": "Python for Beginners",
-        "description": "Learn the basics of Python with practical exercises.",
-        "price": 49.99,
-        "inStock": True
-    },
-    {
-        "id": 2,
-        "name": "Web Development with Flask",
-        "description": "Build web applications using Python and Flask.",
-        "price": 69.00,
-        "inStock": True
-    },
-    {
-        "id": 3,
-        "name": "JavaScript Fundamentals",
-        "description": "Get started with JavaScript and develop interactive websites.",
-        "price": 39.99,
-        "inStock": False
-    }
-]
+COURSES_FILE = "courses.json"
+
+def load_courses():
+    if os.path.exists(COURSES_FILE):
+        with open(COURSES_FILE, "r", encoding="utf-8") as f:
+            return json.load(f)
+    return []
+
+def save_courses(courses):
+    with open(COURSES_FILE, "w", encoding="utf-8") as f:
+        json.dump(courses, f, ensure_ascii=False, indent=2)
+
+courses = load_courses()
 
 @app.route('/api/courses', methods=['GET'])
 def get_courses():
@@ -54,6 +44,7 @@ def add_course():
     data = request.json
     data['id'] = max([c['id'] for c in courses], default=0) + 1
     courses.append(data)
+    save_courses(courses)
     return jsonify(data), 201
 
 @app.route('/api/generate-courses', methods=['POST'])
@@ -77,7 +68,6 @@ def generate_courses():
         logging.info(f"Prompt: {prompt}")
         logging.info(f"Response: {json_response}")
         with open("openrouter_responses.jsonl", "a", encoding="utf-8") as f:
-            import json
             f.write(json.dumps({"prompt": prompt, "response": json_response}, ensure_ascii=False) + "\n")
         return jsonify(json_response), 200
     except requests.exceptions.JSONDecodeError:

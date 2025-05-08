@@ -26,6 +26,7 @@ function App() {
   const [form, setForm] = useState<CourseForm>(initialForm);
   const [prompt, setPrompt] = useState("");
   const [loading, setLoading] = useState(false);
+  const [generatedCourses, setGeneratedCourses] = useState<Course[]>([]);
 
   useEffect(() => {
     fetch("http://localhost:5000/api/courses")
@@ -78,29 +79,33 @@ function App() {
         data.result ||
         "";
       const parsed = typeof content === "string" ? JSON.parse(content) : content;
-      setCourses(parsed);
+      setGeneratedCourses(parsed);
     } catch (err) {
       alert("Could not parse generated courses.");
     }
     setLoading(false);
   };
 
+  const saveGeneratedCourses = async () => {
+    for (const course of generatedCourses) {
+      // Remove id if present, so backend assigns a new one
+      const { id, ...courseData } = course;
+      await fetch("http://localhost:5000/api/courses", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(courseData),
+      })
+        .then((res) => res.json())
+        .then((newCourse: Course) => {
+          setCourses((prev) => [...prev, newCourse]);
+        });
+    }
+    setGeneratedCourses([]);
+  };
+
   return (
     <div className="container">
       <h1>🎓 Programming Courses</h1>
-      <ul className="course-list">
-        {courses.map((c) => (
-          <li key={c.id} className="course-item">
-            <b>{c.name}</b> – {c.description}
-            <div className="course-meta">
-              <span>💶 {c.price} €</span>
-              <span className={c.inStock ? "in-stock" : "not-available"}>
-                {c.inStock ? "Available" : "Not available"}
-              </span>
-            </div>
-          </li>
-        ))}
-      </ul>
       <div className="section">
         <h2>Add a New Course</h2>
         <form onSubmit={handleSubmit} className="form">
@@ -148,12 +153,55 @@ function App() {
           style={{ width: "100%" }}
           placeholder="Enter your prompt for course generation"
         />
-        <button onClick={generateCourses} disabled={loading}>
-          {loading ? "Generating..." : "Generate Courses"}
-        </button>
+        <div style={{ display: "flex", gap: "1rem", marginTop: "0.5rem" }}>
+          <button onClick={generateCourses} disabled={loading}>
+            {loading ? "Generating..." : "Generate Courses"}
+          </button>
+          <button
+            onClick={saveGeneratedCourses}
+            disabled={generatedCourses.length === 0}
+            style={{ background: "#16a34a", color: "#fff", border: "none", borderRadius: 5, padding: "0.7rem 1.2rem", cursor: generatedCourses.length === 0 ? "not-allowed" : "pointer" }}
+          >
+            Save
+          </button>
+        </div>
         <p className="note">
           <b>Note:</b> The system expects the AI to return a JSON array of courses with the following structure: id (number), name (string), description (string), price (number), inStock (boolean).
         </p>
+        {generatedCourses.length > 0 && (
+          <div style={{ marginTop: "1.5rem" }}>
+            <h3>Preview Generated Courses</h3>
+            <ul className="course-list">
+              {generatedCourses.map((c, idx) => (
+                <li key={idx} className="course-item">
+                  <b>{c.name}</b> – {c.description}
+                  <div className="course-meta">
+                    <span>💶 {c.price} €</span>
+                    <span className={c.inStock ? "in-stock" : "not-available"}>
+                      {c.inStock ? "Available" : "Not available"}
+                    </span>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </div>
+      <div className="section">
+        <h2>All Courses</h2>
+        <ul className="course-list">
+          {courses.map((c) => (
+            <li key={c.id} className="course-item">
+              <b>{c.name}</b> – {c.description}
+              <div className="course-meta">
+                <span>💶 {c.price} €</span>
+                <span className={c.inStock ? "in-stock" : "not-available"}>
+                  {c.inStock ? "Available" : "Not available"}
+                </span>
+              </div>
+            </li>
+          ))}
+        </ul>
       </div>
       <style>{`
         .container {

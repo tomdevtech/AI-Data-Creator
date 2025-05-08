@@ -9,6 +9,7 @@ AI-Data-Creator is a tool that leverages the 🤖 OpenRouter API to generate sam
 - 📝 Custom prompt input for flexible data generation
 - 🖥️ Modern React (Vite + TypeScript) frontend
 - 🔗 REST API with Flask backend
+- 💾 Persistent storage of courses in `courses.json`
 - 📱 UI-friendly data structure
 
 ## 🛠️ Setup
@@ -32,6 +33,11 @@ OPENROUTER_API_URL=https://openrouter.ai/api/v1/chat/completions
 FLASK_ENV=development
 FLASK_DEBUG=1
 FLASK_RUN_PORT=5000
+```
+
+Create an empty `courses.json` file in the `backend` directory:
+```json
+[]
 ```
 
 🚦 Start the backend:
@@ -64,3 +70,7 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 ## ⭐ Support
 If you find this project helpful, please give it a ⭐ star! For issues and feature requests, please use the GitHub issue tracker. 🚩
+
+---
+
+> Thanks for working with me! 😊
