@@ -19,7 +19,7 @@ const initialForm: CourseForm = {
 };
 
 const defaultStructureHint =
-  "Return only a JSON array of programming courses. Each course must have: id (number), name (string), description (string), price (number), inStock (boolean).";
+  "Return only a JSON array of programming courses. Each course must have: id (number), name (string), description (string), price (number), inStock (boolean). Output only valid JSON, no explanation, no markdown, no text.";
 
 function App() {
   const [courses, setCourses] = useState<Course[]>([]);
@@ -64,24 +64,21 @@ function App() {
 
   const generateCourses = async () => {
     setLoading(true);
-    const fullPrompt = `${prompt}\n\n${defaultStructureHint}`;
     const response = await fetch("http://localhost:5000/api/generate-courses", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ prompt: fullPrompt }),
+      body: JSON.stringify({ prompt: defaultStructureHint }),
     });
     const data = await response.json();
-    try {
-      const content =
-        data.choices?.[0]?.message?.content ||
-        data.choices?.[0]?.text ||
-        data.content ||
-        data.result ||
-        "";
-      const parsed = typeof content === "string" ? JSON.parse(content) : content;
-      setGeneratedCourses(parsed);
-    } catch (err) {
-      alert("Could not parse generated courses.");
+
+    if (Array.isArray(data)) {
+      setGeneratedCourses(data);
+    } else if (data.error) {
+      alert("Fehler: " + data.error + "\nRaw:\n" + data.raw);
+      setGeneratedCourses([]);
+    } else {
+      alert("Unbekanntes Backend-Format:\n" + JSON.stringify(data));
+      setGeneratedCourses([]);
     }
     setLoading(false);
   };
@@ -160,7 +157,14 @@ function App() {
           <button
             onClick={saveGeneratedCourses}
             disabled={generatedCourses.length === 0}
-            style={{ background: "#16a34a", color: "#fff", border: "none", borderRadius: 5, padding: "0.7rem 1.2rem", cursor: generatedCourses.length === 0 ? "not-allowed" : "pointer" }}
+            style={{
+              background: "#16a34a",
+              color: "#fff",
+              border: "none",
+              borderRadius: 5,
+              padding: "0.7rem 1.2rem",
+              cursor: generatedCourses.length === 0 ? "not-allowed" : "pointer",
+            }}
           >
             Save
           </button>
